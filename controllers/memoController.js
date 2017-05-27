@@ -1,50 +1,48 @@
-require('dotenv').config();
-const saltRounds = Number(process.env.SALT_ROUNDS);
-
-var User = require('../models/user');
-var bcrypt = require('bcrypt');
+var Memo = require('../models/memo');
+var util = require('../helpers/util')
 const mongoose = require('mongoose');
 
 mongoose.connect('mongodb://localhost/porto-rest-api');
 
 var get = function(req, res) {
-  User.find({}, function (err, users) {
-    res.send(users)
+  util.userInfo(req.headers.token, function(result) {
+    Memo.find({ creator: result.id }, (err, memos) => {
+      res.send(memos)
+    })
   });
 }
 
 var create = function(req, res) {
-  var salt = bcrypt.genSaltSync(saltRounds);
-  var hash = bcrypt.hashSync(req.body.password, salt);
-
-  var newUser = new User({
-    email: req.body.email,
-    password: hash
-  })
-  newUser.save((err, user) => {
-    if(err) {
-      res.send(err.errors)
-    } else res.send(user)
+  util.userInfo(req.headers.token, function(result) {
+    var newMemo = new Memo({
+      content: req.body.email,
+      creator: result.id
+    })
+    newMemo.save((err, memo) => {
+      if(err) {
+        res.send(err.errors)
+      } else res.send(memo)
+    })
   })
 }
 
 var getOne = function(req, res) {
-  User.find({_id: req.params.id}, (err, user) => {
-    res.send(user)
+  Memo.find({_id: req.params.id}, (err, memo) => {
+    res.send(memo)
   })
 }
 
 var update = function(req, res) {
-  User.findByIdAndUpdate(req.params.id, { $set: req.body }, { runValidators: true }, (err, user) => {
+  Memo.findByIdAndUpdate(req.params.id, { $set: req.body }, { runValidators: true }, (err, memo) => {
     if(err) res.send(err.errors)
-    res.send(user)
+    res.send(memo)
   })
 }
 
 var remove = function(req, res) {
-  User.findOneAndRemove({_id: req.params.id}, (err, user) => {
+  Memo.findOneAndRemove({_id: req.params.id}, (err, memo) => {
     if(err) res.send(err)
-    res.send(user)
+    res.send(memo)
   })
 }
 
