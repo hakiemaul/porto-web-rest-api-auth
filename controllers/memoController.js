@@ -13,9 +13,10 @@ var get = function(req, res) {
 }
 
 var create = function(req, res) {
+  var content = req.body.memo_content;
   util.userInfo(req.headers.token, function(result) {
     var newMemo = new Memo({
-      content: req.body.email,
+      content: content,
       creator: result.id
     })
     newMemo.save((err, memo) => {
@@ -33,16 +34,43 @@ var getOne = function(req, res) {
 }
 
 var update = function(req, res) {
-  Memo.findByIdAndUpdate(req.params.id, { $set: req.body }, { runValidators: true }, (err, memo) => {
-    if(err) res.send(err.errors)
-    res.send(memo)
+  util.userInfo(req.headers.token, function(result) {
+    Memo.findById(req.params.id, (err, memo) => {
+      if(err) {
+        res.send(err)
+      } else {
+        if(memo.creator == result.id) {
+          memo.content = req.body.memo_content;
+          memo.save((err, newMemo) => {
+            if(err) {
+              res.send(err.errors)
+            } else res.send(newMemo)
+          })
+        } else {
+          res.send('This is not your memo')
+        }
+      }
+    })
   })
 }
 
 var remove = function(req, res) {
-  Memo.findOneAndRemove({_id: req.params.id}, (err, memo) => {
-    if(err) res.send(err)
-    res.send(memo)
+  util.userInfo(req.headers.token, function(result) {
+    Memo.findById(req.params.id, (err, memo) => {
+      if(err) {
+        res.send(err)
+      } else {
+        if(memo.creator == result.id) {
+          Memo.remove({_id: req.params.id}, (err) => {
+            if(err) {
+              res.send(err)
+            } else res.send('Removed')
+          })
+        } else {
+          res.send('This is not your memo')
+        }
+      }
+    })
   })
 }
 

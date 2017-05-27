@@ -17,16 +17,18 @@ var login = function(req, res, next) {
   if(!token) {
     User.findOne({ email: email }, function(err, user) {
       if(err) res.send(err);
-      bcrypt.compare(password, user.password)
-      .then(result => {
-        if(result) {
-          var token = jwt.sign({id: user.id, email: user.email }, sec);
-          res.send(token);
-        } else {
-          res.send('Incorrect password');
-        }
-      })
-      .catch(err => console.log(err))
+      if(user) {
+        bcrypt.compare(password, user.password)
+        .then(result => {
+          if(result) {
+            var token = jwt.sign({id: user.id, email: user.email }, sec);
+            res.send(token);
+          } else {
+            res.send('Incorrect password');
+          }
+        })
+        .catch(err => console.log(err))
+      } else res.send('No such user')
     })
   } else {
     res.send('You already have a token!')
